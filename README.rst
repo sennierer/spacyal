@@ -1,4 +1,4 @@
-Spacy Active learing
+Spacy Active learning
 ====================
 
 .. image:: https://zenodo.org/badge/130271493.svg
