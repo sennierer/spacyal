@@ -1,6 +1,9 @@
 Spacy Active learing
 ====================
 
+.. image:: https://zenodo.org/badge/130271493.svg
+   :target: https://zenodo.org/badge/latestdoi/130271493
+
 Django app that uses active learning (deliberately picking the examples to annotate) to retrain the spaCy_ NER module more effectively.
 
 Prerequisites
