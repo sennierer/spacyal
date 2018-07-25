@@ -1,0 +1,197 @@
+{% extends "webpage/base.html" %}
+{% load staticfiles %}
+{% load crispy_forms_tags %}
+{% load webpage_extras %}
+{% block title %} About {% endblock %}
+{% block scriptHeader %}
+<script src="{% static 'spacyal/js/csrf.js' %}"></script>
+<link rel="stylesheet" href="{% static 'spacyal/css/spacyal.css' %}" />
+{% endblock scriptHeader %}
+{% block content %}
+<div class="container">
+  <div class="row">
+    <div class="col-md-4" id="left-menu">
+      <div class=" panel panel-default">
+        <div class="panel-heading">{{object.name}}</div>
+        <div id="left-menu" class="panel-body">
+          <div id="progress_model" style="display: none">
+          <h4 style="font-style: italic;">training new model</h4>
+          <div class="progress">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%"></div>
+          </div>
+          <small class="form-text text-muted">Hint: Training is done in the background. You can proceed annotating, but we will use your work only in the next iteration.</small>
+          </div>
+          <h4>decission history</h4>
+          <table class="table" id="last-5-dec">
+            <thead><th>sent</th><th>decission</th></thead>
+            <tbody></tbody>
+          </table>
+          <hr/>
+          <a href="{% url 'spacyal_api:download_model' %}?project_id={{object.pk}}">Download latest model</a>
+	  <hr/>
+	  <a href="{% url 'spacyal_api:download_cases' %}?format=json&project_id={{object.pk}}">Download decissions</a>
+	  <hr/>
+	  <a href="{% url 'spacyal_api:download_cases' %}?format=json&exclude_wrong=true&project_id={{object.pk}}">Download decissions (excluding wrong)</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-8" id="container-main">
+      <div class="sentence" id="sent_decide"></div>
+      <div id="form_decide">
+        <button class="button_decission btn btn-success" data-decission="1" id="b_correct">Correct</button>
+        <button class="button_decission btn btn-danger" data-decission="2" id="b_wrong">Wrong</button>
+        <button class="button_decission btn btn-warning" data-decission="0" id="b_skip">Skip</button>
+      </div>
+  </div>
+  </div>
+</div>
+{% endblock content %}
+
+{% block scripts %}
+<script type="text/javascript">
+function return_decission(decission, pk) {
+  var res = '<select data-id="'+pk+'" class="selectpicker change_dec">'
+  if (decission == 1) {
+    res += '<option value="1" selected>Correct</option>'
+    res += '<option value="2">Wrong</option>'
+    res += '<option value="0">Skip</option>'
+  } else if (decission == 2) {
+    res += '<option value="2" selected>Wrong</option>'
+    res += '<option value="1">Correct</option>'
+    res += '<option value="0">Skip</option>'
+  } else if (decission == 0) {
+    res += '<option value="0" selected>Skip</option>'
+    res += '<option value="1">Correct</option>'
+    res += '<option value="2">Wrong</option>'
+  };
+  res += '</select>'
+  return res
+};
+function save_case(project_id, case_id, decission, correction=false){
+  if ($.AL_projects[project_id.toString()]['cases'].length < 5 && !correction){
+    var retrain = true;
+    $.AL_projects[project_id.toString()]['retrain'] = true;
+  } else {
+    var retrain = false;
+  };
+  var data = {'project_id': project_id,
+  'decission': decission,
+  'case_id': case_id,
+  'retrain': retrain
+};
+  $.ajax({
+    type: "POST",
+    contentType: "application/json",
+    dataType: "JSON",
+    url: "{% url 'spacyal_api:retrievecases' %}",
+    data: JSON.stringify(data),
+    success: function (data) {
+      console.log('success');
+      console.log(data);
+      if (data.m_hash) {
+        check_progress_model(data.m_hash)
+      };
+      if (!correction) {
+      if ($("#last-5-dec > tbody > tr").length >= 5) {
+        $("#last-5-dec > tbody > tr").last().remove();
+      };
+      var ael = $.AL_projects[project_id.toString()]['actual_case'];
+      $("#last-5-dec > tbody").prepend($.parseHTML(
+        "<tr><td>"+ael.sentence+"</td><td>"+return_decission(decission, ael.id)+"</td></tr>"
+      ))
+        if ($.AL_projects[project_id.toString()]['cases'].length == 0){
+          s = {}
+          s['sentence'] = "<h3>No more examples</h3>"
+        } else {
+          var s = $.AL_projects[project_id.toString()]['cases'].shift();
+          $.AL_projects[project_id.toString()]['actual_case'] = s;
+        };
+  $('#sent_decide').html($.parseHTML(s.sentence));
+}}
+});
+if (data['retrain']){
+  load_cases({{object.pk}}, true);
+}
+};
+function load_cases(project_id, call_save=false){
+  if (!$.AL_projects) {
+    $.AL_projects = {};
+    var s = {'cases': [], 'retrain': false};
+    $.AL_projects[project_id.toString()] = s;
+};
+  if (!$.AL_projects[project_id.toString()]) {
+    $.AL_projects[project_id.toString()]['cases'] = [];
+    $.AL_projects[project_id.toString()]['retrain'] = false;
+  };
+  $.ajax({
+    type: "GET",
+    url: "{% url 'spacyal_api:retrievecases' %}",
+    data: {'project_id': project_id},
+    success: function (data) {
+      if ($('#sent_decide').is(':empty')){
+        var s = data.shift();
+  $('#sent_decide').html($.parseHTML(s.sentence));
+};
+      if (call_save){
+        var s = data.shift();
+        $('#sent_decide').html($.parseHTML(s.sentence));
+      };
+      $.AL_projects[project_id.toString()]['actual_case'] = s;
+$.extend($.AL_projects[project_id.toString()]['cases'], data)
+$.AL_projects[project_id.toString()]['retrain'] = false;
+},
+statusCode: {
+  403: function(data) {
+    console.log(data);
+    alert( data.responseJSON.message );
+  }
+}
+  })
+};
+
+function check_progress_model(hash){
+  $.ajax({
+    type: "GET",
+    url: "{% url 'spacyal_api:progress_model' %}",
+    data: {'celery_task': hash},
+    success: function (data) {
+      if (data.status == 'PROGRESS') {
+        $('#progress_model').css('display', '');
+        $('#progress_model > div.progress > div.progress-bar').css('width', data.percent+'%');
+        $('#progress_model > div.progress > div.progress-bar').attr('aria-valuenow', data.percent);
+        setTimeout('check_progress_model("'+hash+'")', 5000);
+      } else if (data.status == 'SUCCESS') {
+        $('#progress_model').css('display', 'none');
+      } else {
+        $('#left-menu').append(`<div class="alert alert-warning alert-dismissible fade show" role="alert">
+  <strong>Something went wrong.</strong> Please consider the console log.
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+</button>
+</div>`);
+console.log('error in model training: '+data.result)
+      };
+},
+statusCode: {
+  500: function(data) {
+    console.log('error');
+    setTimeout('check_progress_model("'+hash+'")', 5000);
+  }
+}
+})};
+
+$(document).ready(function () {
+  load_cases({{object.pk}});
+  $('.button_decission').on('click', function(){
+    var decission = $(this).data('decission');
+    var case_id = $('#sent_decide > mark').data('id');
+    save_case({{object.pk}}, case_id, decission);
+  });
+  $(document).on('change', '.change_dec', function(){
+    var decission = $(this).val();
+    var case_id = $('mark').data('id');
+    save_case({{object.pk}}, case_id, decission, correction=true);
+  })
+})
+</script>
+{% endblock scripts %}

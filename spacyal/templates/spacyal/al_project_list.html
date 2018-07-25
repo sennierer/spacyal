@@ -1,0 +1,10 @@
+{% extends "webpage/base.html" %}
+{% load staticfiles %}
+{% load crispy_forms_tags %}
+{% load webpage_extras %}
+{% block title %}Active Learning Projects{% endblock %}
+{% load render_table from django_tables2 %}
+{% block content %}
+<h3>Your Active Learning Projects</h3>
+{% render_table table %}
+{% endblock content %}

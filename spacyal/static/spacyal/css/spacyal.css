@@ -1,0 +1,54 @@
+div.sentence {
+    line-height: 2em;
+}
+
+#sent_decide {
+  padding-top: 1em;
+  padding-bottom: 2em;
+}
+
+mark {
+  -moz-border-radius: 6px;
+ border-radius: 6px;
+}
+
+[data-ner] {
+    line-height: 1.5em;
+    display: inline-block;
+    padding: 0 0.15em 0.15em 2.5em;
+    position: relative;
+    cursor: help;
+    white-space: pre;
+}
+
+[data-ner]:after {
+    box-sizing: border-box;
+    content: '*' attr(data-ner);
+    line-height: 1;
+    display: inline-block;
+    font-size: 0.65em;
+    font-weight: bold;
+    text-transform: uppercase;
+    position: absolute;
+    /*left: 2em;*/
+    left: 0.5em;
+    top: 0.75em;
+    -webkit-transition: opacity 0.25s ease;
+    transition: opacity 0.25s ease;
+}
+
+[data-ner][data-ner="LOC"] {
+  background-color: rgba(41, 122, 196, 0.80);
+}
+
+[data-ner][data-ner="PER"] {
+  background-color: rgba(166, 54, 35, 0.8);
+}
+
+[data-ner][data-ner="ORG"] {
+  background-color: rgba(14, 185, 36, 0.8);
+}
+
+[data-ner][data-ner="MISC"] {
+  background-color: rgba(207, 198, 74, 0.8);
+}
