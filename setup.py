@@ -10,14 +10,14 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
     name='acdh-spacyal',
-    version='0.3',
+    version='0.3.1',
     packages=find_packages(
-        exclude=['spacyal/migrations', 'spacyal/__pycache__']),
+        exclude=['spacyal/__pycache__']),
     include_package_data=True,
     license='MIT License',  # example license
     description='Addon to Django apps that allows to retrain Spacy NER with active learning.',
     long_description=README,
-    url='https://www.spacyapp.eos.arz.oeaw.ac.at/',
+    url='https://github.com/sennierer/spacyal',
     author='Matthias Schlögl',
     author_email='matthias.schloegl@oeaw.ac.at',
     classifiers=[
