@@ -38,7 +38,6 @@ Installation
 * Install the package
 * include spacyal.urls and spacyal.api_urls in your main url definition
 * ensure that you have a base template called base.html
-* run python manage.py makemigrations spacyal
 * run python manage.py migrate
 * and you should be good to go
 
