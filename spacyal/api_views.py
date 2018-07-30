@@ -74,7 +74,12 @@ class GetProgressModelView(APIView):
 
     def get(self, request):
         celery_task = request.query_params.get('celery_task')
-        t = TaskResult.objects.get(task_id=celery_task)
+        t = TaskResult.objects.filter(task_id=celery_task)
+        if t.count() == 0:
+            r = {'status': 'NOT STARTED', 'percent': 0}
+            return Response(r)
+        else:
+            t = t[0]
         if t.status == 'PROGRESS':
             r = {'status': 'PROGRESS', 'percent': json.loads(t.result)['progress']}
         elif t.status == 'SUCCESS':
