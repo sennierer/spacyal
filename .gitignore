@@ -103,3 +103,7 @@ venv.bak/
 # mypy
 .mypy_cache/
 
+# node
+spacyal/static/spacyal/js/node_modules/
+# eslint
+spacyal/static/spacyal/js/.eslintrc.json
