@@ -38,10 +38,12 @@
     <div class="col-md-8" id="container-main">
       <div class="sentence" id="sent_decide"></div>
       <div id="form_decide">
-        <button class="button_decission btn btn-success" data-decission="1" id="b_correct">Correct</button>
-        <button class="button_decission btn btn-danger" data-decission="2" id="b_wrong">Wrong</button>
-        <button class="button_decission btn btn-warning" data-decission="0" id="b_skip">Skip</button>
+        <button class="button_decission btn btn-success" data-decission="1" id="b_correct">Correct (c)</button>
+        <button class="button_decission btn btn-danger" data-decission="2" id="b_wrong">Wrong (w)</button>
+        <button class="button_decission btn btn-warning" data-decission="0" id="b_skip">Skip (s)</button>
       </div>
+      <hr/>
+	<small class="form-text text-muted">Hint: You can use "w" for wrong, "s" for skip and "c" for correct.</small>
   </div>
   </div>
 </div>
@@ -66,6 +68,9 @@ function return_decission(decission, pk) {
   };
   res += '</select>'
   return res
+};
+function change_ner(project_id, case_id, ner){
+	
 };
 function save_case(project_id, case_id, decission, correction=false){
   if ($.AL_projects[project_id.toString()]['cases'].length < 5 && !correction){
@@ -191,7 +196,20 @@ $(document).ready(function () {
     var decission = $(this).val();
     var case_id = $('mark').data('id');
     save_case({{object.pk}}, case_id, decission, correction=true);
-  })
+  });
+$(document).keypress(function(e){
+	if ($('#sent_decide').length) {
+		var sent_decide = $('#sent_decide > mark')
+		var case_id = sent_decide.data('id');
+		if (e.key == 'c'){
+			save_case({{object.pk}}, case_id, 1);
+		} else if (e.key == 'w'){
+		save_case({{object.pk}}, case_id, 2);
+		} else if (e.key == 's'){
+		save_case({{object.pk}}, case_id, 0);
+		}
+	}
+})
 })
 </script>
 {% endblock scripts %}

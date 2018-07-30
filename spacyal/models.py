@@ -12,7 +12,6 @@ from django.db import transaction
 from stat import S_IRWXU, S_IRWXG, S_IROTH
 
 
-
 fs_models = getattr(settings, "SPACY_AL_STORAGE", 'data')
 fs_media = getattr(settings, "MEDIA_ROOT")
 fs_store = os.path.join(fs_media, fs_models)

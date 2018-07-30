@@ -1,3 +1,4 @@
+import re
 from celery import shared_task, current_task
 import random
 from pathlib import Path
@@ -145,7 +146,7 @@ def get_cases(project, model='model_1', retrained=True):
                         hsh = hashlib.md5((os.fsdecode(os.path.join(directory, file))+':'+str(start)+'-'+str(end)).encode('utf8')).hexdigest()
                         entity_scores[(start, end, hsh, label)] += score
             for k in entity_scores.keys():
-                if k[0] < 0 or k[1] < 0 or doc[k[0]:k[1]].text == '\n':
+                if k[0] < 0 or k[1] < 0 or doc[k[0]:k[1]].text == '\n' or not re.search(r'[a-zA-Z0-9]+', doc[k[0]:k[1]].text):
                     continue
                 df_b.loc[k[2], 'start'] = k[0]
                 df_b.loc[k[2], 'end'] = k[1]
@@ -157,7 +158,7 @@ def get_cases(project, model='model_1', retrained=True):
                         s.append('<mark>'+doc[k[0]:k[1]].text+'</mark>')
                         s.append(doc[k[1]-1].whitespace_)
                         s.extend([t.text_with_ws for t in sent if t.i >= k[1]])
-                        df_b.loc[k[2], 'sentence'] = ''.join(s)
+                        df_b.loc[k[2], 'sentence'] = ''.join(s).strip()
                         df_b.loc[k[2], 'start_char'] = doc[:k[0]].end_char
                         df_b.loc[k[2], 'end_char'] = doc[:k[1]].end_char
     elif project.last_cases_list is not None:

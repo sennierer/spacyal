@@ -1,0 +1,33 @@
+{
+  "name": "spacyal",
+  "version": "0.3.1",
+  "description": "js part of spacyal package",
+  "main": "spacyal.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sennierer/spacyal.git"
+  },
+  "keywords": [
+    "spacy",
+    "django",
+    "active_learning",
+    "ner"
+  ],
+  "author": "matthias.schloegl@oeaw.ac.at",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/sennierer/spacyal/issues"
+  },
+  "homepage": "https://github.com/sennierer/spacyal#readme",
+  "devDependencies": {
+    "eslint": "^5.2.0",
+    "eslint-config-standard": "^11.0.0",
+    "eslint-plugin-import": "^2.13.0",
+    "eslint-plugin-node": "^7.0.1",
+    "eslint-plugin-promise": "^3.8.0",
+    "eslint-plugin-standard": "^3.1.0"
+  }
+}
