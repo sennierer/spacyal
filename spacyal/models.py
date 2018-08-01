@@ -74,7 +74,6 @@ class al_project(models.Model):
         if not include_all:
             q['use'] = True
         for c in case.objects.filter(**q).order_by('start_char'):
-            print(c)
             if c.text_file not in res.keys():
                 res[c.text_file] = [(
                     c.start_char, c.end_char, c.suggestion, c.decission)]

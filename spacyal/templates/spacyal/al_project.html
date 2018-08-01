@@ -171,7 +171,6 @@ function check_progress_model(hash){
         $('#progress_model').css('display', 'none');
       } else if (data.status == 'NOT STARTED') {
        $('#not_started').css('display', '');
-      };
       } else {
         $('#left-menu').append(`<div class="alert alert-warning alert-dismissible fade show" role="alert">
   <strong>Something went wrong.</strong> Please consider the console log.
@@ -181,14 +180,15 @@ function check_progress_model(hash){
 </div>`);
 console.log('error in model training: '+data.result)
       };
-},
+      },
+
 statusCode: {
   500: function(data) {
     console.log('error');
     setTimeout('check_progress_model("'+hash+'")', 5000);
   }
-}
-})};
+
+}})};
 
 $(document).ready(function () {
   load_cases({{object.pk}});
