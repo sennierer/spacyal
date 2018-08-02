@@ -14,7 +14,7 @@
       <div class=" panel panel-default">
         <div class="panel-heading">{{object.name}}</div>
         <div id="left-menu" class="panel-body">	
-	  <div class="not_started" style="display: none">   
+	  <div id="not_started" style="display: none">   
           <h4 style="font-style: italic;">Training process is starting</h4>
 	  </div>
           <div id="progress_model" style="display: none">
@@ -95,7 +95,7 @@ function save_case(project_id, case_id, decission, correction=false){
       console.log('success');
       console.log(data);
       if (data.m_hash) {
-        check_progress_model(data.m_hash)
+        check_progress_model(data.m_hash);
       };
       if (!correction) {
       if ($("#last-5-dec > tbody > tr").length >= 5) {
@@ -115,9 +115,9 @@ function save_case(project_id, case_id, decission, correction=false){
   $('#sent_decide').html($.parseHTML(s.sentence));
 }}
 });
-if (data['retrain']){
-  load_cases({{object.pk}}, true);
-}
+//if (data['retrain']){
+//  load_cases({{object.pk}}, true);
+//}
 };
 function load_cases(project_id, call_save=false){
   if (!$.AL_projects) {
@@ -156,11 +156,13 @@ statusCode: {
 };
 
 function check_progress_model(hash){
+	console.log('progress started');
   $.ajax({
     type: "GET",
     url: "{% url 'spacyal_api:progress_model' %}",
     data: {'celery_task': hash},
     success: function (data) {
+      console.log(data);
       if (data.status == 'PROGRESS') {
 	$('#not_started').css('display', 'none');
         $('#progress_model').css('display', '');
@@ -169,8 +171,10 @@ function check_progress_model(hash){
         setTimeout('check_progress_model("'+hash+'")', 5000);
       } else if (data.status == 'SUCCESS') {
         $('#progress_model').css('display', 'none');
+	load_cases({{object.pk}}, false);
       } else if (data.status == 'NOT STARTED') {
        $('#not_started').css('display', '');
+        setTimeout('check_progress_model("'+hash+'")', 5000);
       } else {
         $('#left-menu').append(`<div class="alert alert-warning alert-dismissible fade show" role="alert">
   <strong>Something went wrong.</strong> Please consider the console log.
@@ -181,7 +185,6 @@ function check_progress_model(hash){
 console.log('error in model training: '+data.result)
       };
       },
-
 statusCode: {
   500: function(data) {
     console.log('error');

@@ -4,3 +4,4 @@ recursive-include spacyal/templates/spacyal *
 recursive-include spacyal/static/spacyal *
 recursive-exclude spacyal/static/spacyal/js/node_modules *
 exclude spacyal/static/spacyal/js/.eslintrc.json
+recursive-exclude spacyal/static/spacyal/js/al_annotation *
