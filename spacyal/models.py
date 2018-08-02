@@ -84,7 +84,7 @@ class al_project(models.Model):
             c.save()
         res2 = []
         for k in res.keys():
-            txt = open(k, 'r').read()
+            txt = open(k, 'r', encoding="utf8").read()
             res2.append((txt, {'entities': res[k]}))
         return res2
 

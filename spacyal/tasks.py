@@ -199,7 +199,7 @@ def get_cases(project, model='model_1', retrained=True):
     ts = str(datetime.datetime.now()).split('.')[0].replace(':', '_').replace(' ', '_')
     f_path = os.path.join(
         base_d, 'data/df_cases_{}_{}.csv'.format(project.pk, ts))
-    df_b.to_csv(f_path)
+    df_b.to_csv(f_path, encoding="utf8")
     project.last_cases_list = 'data/df_cases_{}_{}.csv'.format(project.pk, ts)
     project.save()
     return 'created {} / {}'.format(f_path, end_of_examples)
