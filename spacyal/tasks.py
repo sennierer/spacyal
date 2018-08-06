@@ -165,6 +165,12 @@ def get_cases(project, model='model_1', retrained=True):
         df_b = pd.DataFrame.from_csv(os.path.join(
             base_d, project.last_cases_list))
     lst_ners = [a for a in df_b.columns if a not in df_cols]
+
+    if project.threshold_probability:
+        if 0 < project.threshold_probability < 1:
+            for row in df_b[lst_ners].iterrows():
+                if row[1].max() < project.threshold_probability:
+                    df_b.drop([row[0]], inplace=True)
     df_b['max score'] = df_b[lst_ners].max(axis=1)
     df_b['median score'] = df_b[lst_ners].median(axis=1)
     df_b = df_b.sort_values(by=[project.al_strategy])

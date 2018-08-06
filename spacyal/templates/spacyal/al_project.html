@@ -115,9 +115,9 @@ function save_case(project_id, case_id, decission, correction=false){
   $('#sent_decide').html($.parseHTML(s.sentence));
 }}
 });
-//if (data['retrain']){
-//  load_cases({{object.pk}}, true);
-//}
+if (data['retrain']){
+  load_cases({{object.pk}}, true);
+}
 };
 function load_cases(project_id, call_save=false){
   if (!$.AL_projects) {

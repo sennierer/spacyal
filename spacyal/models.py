@@ -35,10 +35,14 @@ class al_project(models.Model):
         upload_to=get_filepath_model, blank=True, null=True)
     num_retrain = models.PositiveSmallIntegerField(
         verbose_name='number of examples before retraining',
-        default=10)
+        default=40)
     num_plus_retrain = models.PositiveSmallIntegerField(
         default=5,
         verbose_name='number of cases to work ahead')
+    threshold_probability = models.FloatField(
+        null=True, blank=True,
+        verbose_name='probability threshold'
+    )
     ner_type = models.CharField(max_length=50,
                                 verbose_name='ner types to work on',
                                 null=True, blank=True)
