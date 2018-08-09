@@ -108,4 +108,4 @@ spacyal/static/spacyal/js/node_modules/
 # eslint
 spacyal/static/spacyal/js/.eslintrc.json
 # vue files
-spacyal/static/spacyal/js/al_annotation/
+#spacyal/static/spacyal/js/al_annotation/
