@@ -1,4 +1,6 @@
 import re
+from sklearn.metrics import cohen_kappa_score
+from sklearn.metrics import precision_recall_fscore_support
 from celery import shared_task, current_task
 import random
 from pathlib import Path
@@ -64,6 +66,45 @@ def dec_use(index, row, lst_cases, lst_ners, lst_hashes):
                     res = False
     return res
 
+
+class compute_agreement():
+    @staticmethod
+    def find_tok_number(toklist, start, end):
+        count = 0
+        count2 = 0
+        start_tok = False
+        end_tok = False
+        while count < start:
+            count += len(toklist[count2])
+            count2 += 1
+        start_tok = count2
+        while count <= end:
+            count += len(toklist[count2])
+            count2 += 1
+        end_tok = count2-1
+        return start_tok, end_tok
+
+    def __init__(self, text1, text2, attribute='entities'):
+        if text1[0] != text2[0]:
+            #return False
+            pass
+        t1 = re.split(r'(\s)', text1[0])
+        t2 = re.split(r'(\s)', text2[0])
+        a1 = []
+        a2 = []
+        lst_attr = {'Nothing': 0}
+        for a, t, lst_ents in [(a1, t1, text1[1][attribute]), (a2, t2, text2[1][attribute])]:
+            for ent in lst_ents:
+                if ent[2] not in lst_attr.keys():
+                    lst_attr[ent[2]] = len(lst_attr.keys())+1
+                start, end = self.find_tok_number(t1, ent[0], ent[1])
+                print(start, end)
+                a.extend([0]*(start-len(a)))
+                a.extend([lst_attr[ent[2]]]*(end-start+1))
+            a.extend([0]*(len(t1)-len(a)))
+        self.text_1 = a1
+        self.text_2 = a2
+            
 
 @shared_task(time_limit=1800)
 def retrain_model(project, model=None, n_iter=50):
