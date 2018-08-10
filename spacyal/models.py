@@ -100,6 +100,7 @@ class al_project(models.Model):
         history = project_history.objects.create(project=self)
         if evaluation_data:
             res_ev = dict()
+            print(self.evaluation_share)
             nmb_cases = math.floor(len(d_cases) * self.evaluation_share)
             ev_cases = random.sample(d_cases, nmb_cases)
             t_cases = [x for x in d_cases if x not in ev_cases]
@@ -141,7 +142,7 @@ class al_project(models.Model):
         if evaluation_data:
             return res2, res_ev2, history
         else:
-            return res2, False, history
+            return res2
 
 
 class case(models.Model):

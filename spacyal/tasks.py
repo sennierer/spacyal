@@ -67,7 +67,7 @@ def dec_use(index, row, lst_cases, lst_ners, lst_hashes):
     return res
 
 
-class compute_agreement():
+class test_model():
     @staticmethod
     def find_tok_number(toklist, start, end):
         count = 0
@@ -84,26 +84,51 @@ class compute_agreement():
         end_tok = count2-1
         return start_tok, end_tok
 
-    def __init__(self, text1, text2, attribute='entities'):
-        if text1[0] != text2[0]:
-            #return False
-            pass
-        t1 = re.split(r'(\s)', text1[0])
-        t2 = re.split(r'(\s)', text2[0])
+    @staticmethod
+    def harmonize_doc(doc, ent_attr):
+        res = ['', {ent_attr: []}]
+        int_plus = 0
+        for d in doc:
+            res[0] += d[0]
+            for ent in d[1][ent_attr]:
+                ent_new = (ent[0]+int_plus, ent[1]+int_plus, ent[2])
+                if len(ent) == 4:
+                    ent_new = (ent[0]+int_plus, ent[1]+int_plus, ent[2], ent[3])
+                res[1][ent_attr].append(ent_new)
+            int_plus += len(d[0])
+        return res
+
+    def compute_f1(self):
+        f1 = precision_recall_fscore_support(self.text_1, self.text_2, average='weighted', labels=self.positive_labels)
+        return {'precission': f1[0], 'recall': f1[1], 'fbeta': f1[2], 'support': f1[3]}
+
+    def __init__(self, text, nlp, attribute='entities'):
+        text = self.harmonize_doc(text, 'entities')
+        t1 = re.split(r'(\s)', text[0])
+        t2 = t1
         a1 = []
         a2 = []
+        start_end_lst = ['{}-{}'.format(x[0], x[1]) for x in text[1][attribute]]
+        nlp_ents = [(e.start_char, e.end_char, e.label_) for e in nlp(text[0]).ents if '{}-{}'.format(e.start_char, e.end_char) in start_end_lst]
         lst_attr = {'Nothing': 0}
-        for a, t, lst_ents in [(a1, t1, text1[1][attribute]), (a2, t2, text2[1][attribute])]:
+        print(nlp_ents)
+        for a, t, lst_ents in [(a1, t1, text[1][attribute]), (a2, t2, nlp_ents)]:
             for ent in lst_ents:
+                print(ent)
+                if len(ent) == 4:
+                    if ent[3] != 1:
+                        continue
                 if ent[2] not in lst_attr.keys():
                     lst_attr[ent[2]] = len(lst_attr.keys())+1
-                start, end = self.find_tok_number(t1, ent[0], ent[1])
+                start, end = self.find_tok_number(t, ent[0], ent[1])
                 print(start, end)
                 a.extend([0]*(start-len(a)))
                 a.extend([lst_attr[ent[2]]]*(end-start+1))
             a.extend([0]*(len(t1)-len(a)))
         self.text_1 = a1
         self.text_2 = a2
+        self.labels = lst_attr
+        self.positive_labels = [lst_attr[x] for x in lst_attr.keys() if x != 'Nothing']
             
 
 @shared_task(time_limit=1800)

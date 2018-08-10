@@ -122,12 +122,12 @@ class DownloadCasesView(APIView):
         exclude_wrong = request.query_params.get('exclude_wrong', False)
         if exclude_wrong:
             res = al_project.objects.get(pk=project_id).get_training_data(
-                include_all=True, include_negative=False)
+                include_all=True, include_negative=False, evaluation_data=False)
             for idx, e in enumerate(res):
                 res[idx][1]['entities'] = [(x[0], x[1], x[2]) for x in e[1]['entities']]
         else:
             res = al_project.objects.get(pk=project_id).get_training_data(
-                include_all=True, include_negative=True)
+                include_all=True, include_negative=True, evaluation_data=False)
             for idx, e in enumerate(res):
                 res[idx][1]['entities'] = [(x[0], x[1], x[2], choices[x[3]])
                                            for x in e[1]['entities']]
