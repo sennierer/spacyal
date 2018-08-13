@@ -89,7 +89,11 @@ class test_model():
         res = ['', {ent_attr: []}]
         int_plus = 0
         for d in doc:
-            res[0] += d[0]
+            if len(res[0]) > 0:
+                res[0] += ' ' + d[0]
+                int_plus += 1
+            else:
+                res[0] += d[0]
             for ent in d[1][ent_attr]:
                 ent_new = (ent[0]+int_plus, ent[1]+int_plus, ent[2])
                 if len(ent) == 4:
@@ -104,6 +108,7 @@ class test_model():
 
     def __init__(self, text, nlp, attribute='entities'):
         text = self.harmonize_doc(text, 'entities')
+        self.text = text
         t1 = re.split(r'(\s)', text[0])
         t2 = t1
         a1 = []
@@ -111,6 +116,8 @@ class test_model():
         start_end_lst = ['{}-{}'.format(x[0], x[1]) for x in text[1][attribute]]
         nlp_ents = [(e.start_char, e.end_char, e.label_) for e in nlp(text[0]).ents if '{}-{}'.format(e.start_char, e.end_char) in start_end_lst]
         lst_attr = {'Nothing': 0}
+        print(start_end_lst)
+        print([(e.start_char, e.end_char, e.label_) for e in nlp(text[0]).ents])
         print(nlp_ents)
         for a, t, lst_ents in [(a1, t1, text[1][attribute]), (a2, t2, nlp_ents)]:
             for ent in lst_ents:
@@ -147,7 +154,7 @@ def retrain_model(project, model=None, n_iter=50):
         message = {'folder': os.path.join(base_d, model),
                    'retrained': False, 'project': project.pk}
         return message
-    TRAIN_DATA = project.get_training_data(
+    TRAIN_DATA, eval_data, hist_object = project.get_training_data(
         include_all=True, include_negative=True)
     nlp = spacy.load(os.path.join(base_d, model))  # load existing spaCy model
     TRAIN_DATA = mix_train_data(nlp, TRAIN_DATA)
@@ -177,7 +184,15 @@ def retrain_model(project, model=None, n_iter=50):
     if not Path(output_dir).exists():
         Path(output_dir).mkdir()
     nlp.to_disk(output_dir)
-    message = {'folder': output_dir, 'retrained': True, 'project': project.pk}
+    print(eval_data)
+    ev = test_model(eval_data, nlp)
+    f1 = ev.compute_f1()
+    hist_object.eval_f1 = f1['fbeta']
+    hist_object.eval_precission = f1['precission']
+    hist_object.eval_recall = f1['recall']
+    hist_object.model_path = output_dir
+    hist_object.save()
+    message = {'folder': output_dir, 'retrained': True, 'project': project.pk, 'f1': f1}
     return message
 
 
@@ -225,7 +240,7 @@ def get_cases(project, model='model_1', retrained=True):
                         s.append(doc[k[1]-1].whitespace_)
                         s.extend([t.text_with_ws for t in sent if t.i >= k[1]])
                         df_b.loc[k[2], 'sentence'] = ''.join(s).strip()
-                        df_b.loc[k[2], 'start_char'] = doc[:k[0]].end_char
+                        df_b.loc[k[2], 'start_char'] = doc[:k[0]].end_char+1
                         df_b.loc[k[2], 'end_char'] = doc[:k[1]].end_char
     elif project.last_cases_list is not None:
         df_b = pd.DataFrame.from_csv(os.path.join(

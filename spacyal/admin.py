@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib import admin
 
-from .models import al_project, case
+from .models import al_project, case, project_history
 
 
 class ALProjectForm(forms.ModelForm):
@@ -17,3 +17,4 @@ class ALProjectAdmin(admin.ModelAdmin):
 
 admin.site.register(al_project, ALProjectAdmin)
 admin.site.register(case)
+admin.site.register(project_history)
