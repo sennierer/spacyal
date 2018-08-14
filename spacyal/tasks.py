@@ -1,3 +1,4 @@
+from spacy import util
 import re
 from sklearn.metrics import cohen_kappa_score
 from sklearn.metrics import precision_recall_fscore_support
@@ -139,8 +140,14 @@ class test_model():
             
 
 @shared_task(time_limit=1800)
-def retrain_model(project, model=None, n_iter=50):
+def retrain_model(project, model=None, n_iter=30):
     """Load the model, set up the pipeline and train the entity recognizer."""
+    dropout_rates = util.decaying(util.env_opt('dropout_from', 0.2),
+                                  util.env_opt('dropout_to', 0.2),
+                                  util.env_opt('dropout_decay', 0.0))
+    batch_sizes = util.compounding(util.env_opt('batch_from', 1),
+                                   util.env_opt('batch_to', 16),
+                                   util.env_opt('batch_compound', 1.001))
     if model == 'model_1':
         output_model = 'model_2'
     else:
@@ -156,7 +163,17 @@ def retrain_model(project, model=None, n_iter=50):
         return message
     TRAIN_DATA, eval_data, hist_object = project.get_training_data(
         include_all=True, include_negative=True)
-    nlp = spacy.load(os.path.join(base_d, model))  # load existing spaCy model
+    nlp = spacy.load(os.path.join(base_d, model))# load existing spaCy model
+    if project.project_history_set.all().count() == 1:
+        project_history = ContentType.objects.get(
+            app_label="spacyal", model="project_history").model_class()
+        ev = test_model(eval_data, nlp)
+        f1 = ev.compute_f1()
+        hist2 = project_history.objects.create(
+            project=project, eval_f1=f1['fbeta'],
+            eval_precission=f1['precission'], eval_recall=f1['recall'])
+        hist2.cases_training.add(*list(hist_object.cases_training.all()))
+        hist2.cases_evaluation.add(*list(hist_object.cases_evaluation.all()))
     TRAIN_DATA = mix_train_data(nlp, TRAIN_DATA)
     with open(os.path.join(base_d, 'training_data.json'), 'w') as outp:
         json.dump(TRAIN_DATA, outp)
@@ -174,11 +191,12 @@ def retrain_model(project, model=None, n_iter=50):
                           'model': output_model, 'project': project.pk})
             random.shuffle(TRAIN_DATA)
             losses = {}
-            for text, annotations in TRAIN_DATA:
+            for batch in util.minibatch(TRAIN_DATA, size=batch_sizes):
+                texts, annotations = zip(*batch)
                 nlp.update(
-                    [text],  # batch of texts
-                    [annotations],  # batch of annotations
-                    drop=0.5,  # dropout - make it harder to memorise data
+                    texts,  # batch of texts
+                    annotations,  # batch of annotations
+                    drop=next(dropout_rates),  # dropout - make it harder to memorise data
                     sgd=optimizer,  # callable to update weights
                     losses=losses)
     if not Path(output_dir).exists():

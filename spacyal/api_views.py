@@ -1,5 +1,5 @@
 from rest_framework.views import APIView
-from .models import al_project, case
+from .models import al_project, case, project_history
 from spacyal.tasks import get_cases, retrain_model
 from rest_framework.response import Response
 from rest_framework import status
@@ -42,7 +42,7 @@ class RetrieveCasesView(APIView):
                 project_id, model=c['folder'], retrained=c['retrained'])
         else:
             get_cases.delay(project_id, retrained=False)
-        c = case.objects.filter(project_id=project_id, decission__isnull=True)
+        c = case.objects.filter(project_id=project_id, decission__isnull=True).distinct()
         res = [obj.as_dict() for obj in c]
         return Response(res)
 
@@ -132,3 +132,17 @@ class DownloadCasesView(APIView):
                 res[idx][1]['entities'] = [(x[0], x[1], x[2], choices[x[3]])
                                            for x in e[1]['entities']]
         return Response(res)
+
+
+class GetProjectHistory(APIView):
+    
+    def get(self, request):
+        project_pk = request.query_params.get('project_pk', None)
+        hist_obj = project_history.objects.filter(project_id=project_pk).order_by('timestamp')
+        prec_data = [x.eval_precission for x in hist_obj]
+        rec_data = [x.eval_recall for x in hist_obj]
+        f1_data = [x.eval_f1 for x in hist_obj]
+        labels = list(hist_obj.values_list('timestamp', flat=True))
+        print(labels)
+        return Response({'f1': f1_data, 'precission': prec_data, 'recall': rec_data, 'labels': labels})
+
