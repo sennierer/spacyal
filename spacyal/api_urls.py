@@ -12,4 +12,6 @@ urlpatterns = [
          name='download_model'),
     path('download_cases/', api_views.DownloadCasesView.as_view(),
          name='download_cases'),
+    path('project_history/', api_views.GetProjectHistory.as_view(),
+         name='project_history'),
 ]

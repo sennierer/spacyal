@@ -190,7 +190,7 @@ class project_history(models.Model):
     eval_precission = models.FloatField(blank=True, null=True)
     eval_recall = models.FloatField(blank=True, null=True)
     model_path = models.CharField(max_length=255)
-    timestamp = models.TimeField(auto_now=True)
+    timestamp = models.DateTimeField(auto_now=True)
 
 
 def start_get_cases(sender, instance, created, **kwargs):

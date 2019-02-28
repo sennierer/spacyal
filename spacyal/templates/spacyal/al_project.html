@@ -5,6 +5,7 @@
 {% block title %} About {% endblock %}
 {% block scriptHeader %}
 <script src="{% static 'spacyal/js/csrf.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.bundle.min.js"></script>
 <link rel="stylesheet" href="{% static 'spacyal/css/spacyal.css' %}" />
 {% endblock scriptHeader %}
 {% block content %}
@@ -24,6 +25,9 @@
           </div>
           <small class="form-text text-muted">Hint: Training is done in the background. You can proceed annotating, but we will use your work only in the next iteration.</small>
           </div>
+	  <hr/>
+	  <h4>Evaluation</h4>
+	  <canvas id="evaluation_chart" width="400" height="200"></canvas>
           <h4>decission history</h4>
           <table class="table" id="last-5-dec">
             <thead><th>sent</th><th>decission</th></thead>
@@ -73,8 +77,56 @@ function return_decission(decission, pk) {
   return res
 };
 
+function update_evaluation_chart(project_id){
+	$.ajax({
+		type: "GET",
+		contentType: "application/json",
+		dataType: "JSON",
+		url: "{% url 'spacyal_api:project_history' %}",
+		data: {'project_pk': project_id},
+		success: function(data_input) {
+			console.log(data_input.f1);
+			console.log(data_input.labels);
+			var ctx = $("#evaluation_chart");
+			var history_chart = new Chart(ctx, {
+				type: 'line',	
+				data: {datasets: [{
+					label: 'Precission',
+					fill: false,
+					borderColor: '#449d44',
+					data: data_input.precission,
+					}, {
+					fill: false,
+					borderColor: '#23527c',
+					label: 'F1',
+					data: data_input.f1
+					}, {
+					fill: false,
+					label: 'Recall',
+					borderColor: '#ec971f',
+					data: data_input.recall
+					}],
+					labels: data_input.labels,
+
+				},
+				options: {
+					scales: {
+						xAxes: [{
+							ticks: {
+								display: false
+							}
+						}]
+					},
+				}
+							
+			});
+		
+		}
+			});
+};
+
 function save_case(project_id, case_id, decission, correction=false){
-  if ($.AL_projects[project_id.toString()]['cases'].length < 5 && !correction){
+	if ($.AL_projects[project_id.toString()]['cases'].length < {{object.num_plus_retrain}} && !correction){
     var retrain = true;
     $.AL_projects[project_id.toString()]['retrain'] = true;
   } else {
@@ -94,39 +146,52 @@ function save_case(project_id, case_id, decission, correction=false){
     success: function (data) {
       console.log('success');
       console.log(data);
-      if (data.m_hash) {
-        check_progress_model(data.m_hash);
-      };
       if (!correction) {
-      if ($("#last-5-dec > tbody > tr").length >= 5) {
-        $("#last-5-dec > tbody > tr").last().remove();
-      };
-      var ael = $.AL_projects[project_id.toString()]['actual_case'];
-      $("#last-5-dec > tbody").prepend($.parseHTML(
-        "<tr><td>"+ael.sentence+"</td><td>"+return_decission(decission, ael.id)+"</td></tr>"
-      ))
+	
         if ($.AL_projects[project_id.toString()]['cases'].length == 0){
           s = {}
           s['sentence'] = "<h3>No more examples</h3>"
         } else {
+      if ($("#last-5-dec > tbody > tr").length >= 5) {
+        $("#last-5-dec > tbody > tr").last().remove();
+      };
+      var ael = $.AL_projects[project_id.toString()]['actual_case'];
+	$.AL_projects[project_id.toString()]['decided_cases'].push(ael.id);
+      $("#last-5-dec > tbody").prepend($.parseHTML(
+        "<tr><td>"+ael.sentence+"</td><td>"+return_decission(decission, ael.id)+"</td></tr>"));
+
           var s = $.AL_projects[project_id.toString()]['cases'].shift();
+		while ($.AL_projects[project_id.toString()]['decided_cases'].includes(s.id)) {
+		console.log('double element');
+		console.log(s);
+		s = $.AL_projects[project_id.toString()]['cases'].shift();
+		}
           $.AL_projects[project_id.toString()]['actual_case'] = s;
+		console.log(s);
+		console.log($.AL_projects[project_id.toString()]['cases']);
         };
+
   $('#sent_decide').html($.parseHTML(s.sentence));
+      if (data.m_hash) {
+        check_progress_model(data.m_hash);
+      };
 }}
 });
 if (data['retrain']){
-  load_cases({{object.pk}}, true);
-}
+  load_cases({{object.pk}}, call_save=true);
+};
+return true
 };
 function load_cases(project_id, call_save=false){
+console.log(project_id);
   if (!$.AL_projects) {
     $.AL_projects = {};
-    var s = {'cases': [], 'retrain': false};
+    var s = {'cases': [], 'retrain': false, 'decided_cases': []};
     $.AL_projects[project_id.toString()] = s;
 };
   if (!$.AL_projects[project_id.toString()]) {
     $.AL_projects[project_id.toString()]['cases'] = [];
+    $.AL_projects[project_id.toString()]['decided_cases'] = [];
     $.AL_projects[project_id.toString()]['retrain'] = false;
   };
   $.ajax({
@@ -134,16 +199,16 @@ function load_cases(project_id, call_save=false){
     url: "{% url 'spacyal_api:retrievecases' %}",
     data: {'project_id': project_id},
     success: function (data) {
+	    console.log(data);
       if ($('#sent_decide').is(':empty')){
+	console.log('empty');
         var s = data.shift();
   $('#sent_decide').html($.parseHTML(s.sentence));
-};
-      if (call_save){
-        var s = data.shift();
-        $('#sent_decide').html($.parseHTML(s.sentence));
-      };
       $.AL_projects[project_id.toString()]['actual_case'] = s;
-$.extend($.AL_projects[project_id.toString()]['cases'], data)
+};
+
+//$.extend($.AL_projects[project_id.toString()]['cases'], data)
+$.AL_projects[project_id.toString()]['cases'].push(...data);
 $.AL_projects[project_id.toString()]['retrain'] = false;
 },
 statusCode: {
@@ -171,7 +236,8 @@ function check_progress_model(hash){
         setTimeout('check_progress_model("'+hash+'")', 5000);
       } else if (data.status == 'SUCCESS') {
         $('#progress_model').css('display', 'none');
-	load_cases({{object.pk}}, false);
+	//load_cases({{object.pk}}, false);
+	      update_evaluation_chart({{object.pk}});
       } else if (data.status == 'NOT STARTED') {
        $('#not_started').css('display', '');
         setTimeout('check_progress_model("'+hash+'")', 5000);
@@ -191,7 +257,9 @@ statusCode: {
     setTimeout('check_progress_model("'+hash+'")', 5000);
   }
 
-}})};
+}});
+return true
+};
 
 $(document).ready(function () {
   load_cases({{object.pk}});
@@ -217,7 +285,8 @@ $(document).keypress(function(e){
 		save_case({{object.pk}}, case_id, 0);
 		}
 	}
-})
+});
+	update_evaluation_chart({{object.pk}});
 })
 </script>
 {% endblock scripts %}
