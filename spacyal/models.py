@@ -99,9 +99,12 @@ class al_project(models.Model):
         d_cases = list(case.objects.filter(**q).order_by("start_char"))
         history = project_history.objects.create(project=self)
         if evaluation_data:
+            if self.evaluation_share is None:
+                eval_share = 0.2
+            else:
+                eval_share = self.evaluation_share
             res_ev = dict()
-            print(self.evaluation_share)
-            nmb_cases = math.floor(len(d_cases) * self.evaluation_share)
+            nmb_cases = math.floor(len(d_cases) * eval_share)
             ev_cases = random.sample(d_cases, nmb_cases)
             t_cases = [x for x in d_cases if x not in ev_cases]
             history.cases_evaluation.add(*ev_cases)
